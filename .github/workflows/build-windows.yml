@@ -1,0 +1,31 @@
+name: Build Windows Portable
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Set up Rust MSVC
+        shell: pwsh
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-msvc --profile minimal
+          rustup default stable-x86_64-pc-windows-msvc
+      - name: Test and build portable EXE
+        shell: pwsh
+        run: ./scripts/build-portable.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HVAC-Duct-Calculator-Windows-x64
+          path: dist/portable/
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,11 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {calculate,area} from '../src/calculator.js';import {toSI,fromSI} from '../src/conversions.js';
+const near=(a,b,t=1e-7)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
+test('10 inch square at 10 m/s',()=>near(fromSI(calculate({mode:'flow',shape:'rect',w:.254,h:.254,v:10}).q,'CFM'),1367.0166229221345));
+test('500 x 400 mm at 10 m/s',()=>near(fromSI(calculate({mode:'flow',shape:'rect',w:.5,h:.4,v:10}).q,'CFM'),4237.7600065786));
+test('250 mm round at 10 m/s',()=>near(calculate({mode:'flow',shape:'round',w:.25,v:10}).q,Math.PI*.25**2/4*10));
+test('inverse velocity',()=>near(calculate({mode:'velocity',shape:'rect',w:.254,h:.254,q:toSI(1367.0166229221345,'CFM')}).v,10));
+test('round size and rounding',()=>{const r=calculate({mode:'size',shape:'round',q:toSI(1000,'CFM'),v:10});near(r.tw,Math.sqrt(4*(.3048**3/60*1000/10)/Math.PI));near(r.w,.25);assert.ok(r.actualV<=10);});
+test('rectangular ratios and upward steps',()=>{for(const ratio of [1,1.5,2,2.5,3])for(const step of [.025,.05]){const r=calculate({mode:'size',shape:'rect',q:2,v:10,ratio,step});near(r.tw/r.th,ratio);assert.ok(r.w>=r.tw-1e-12&&r.h>=r.th-1e-12);assert.ok(r.actualV<=10+1e-12);}});
+test('invalid dimensions and velocity',()=>{for(const x of [0,-1,NaN,Infinity,1e13]){assert.throws(()=>area('rect',x,.5));assert.throws(()=>calculate({mode:'flow',shape:'rect',w:.5,h:.5,v:x}));assert.throws(()=>calculate({mode:'velocity',shape:'rect',w:.5,h:.5,q:x}));}});
+test('empty input is invalid',()=>assert.throws(()=>area('round',undefined)));
